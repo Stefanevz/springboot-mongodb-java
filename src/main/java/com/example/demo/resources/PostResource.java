@@ -1,6 +1,8 @@
 package com.example.demo.resources;
 
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.domain.Post;
+import com.example.demo.dto.PostDTO;
 import com.example.demo.resources.util.URL;
 import com.example.demo.services.PostService;
 
@@ -21,17 +24,36 @@ public class PostResource {
 	@Autowired
 	private PostService service;
 	
-	@RequestMapping(value ="/{id}", method = RequestMethod.GET)
-	public ResponseEntity<Post> findById(@PathVariable String id){
+	@RequestMapping(method = RequestMethod.GET)
+	public ResponseEntity< List<PostDTO>> findAll(){
+		List<Post> list = service.findAll();
+		List<PostDTO> listDto = list.stream().map(x -> new PostDTO(x)).collect(Collectors.toList());
+		return ResponseEntity.ok().body(listDto);
+	}
+
+	@RequestMapping(value="/{id}", method=RequestMethod.GET)
+ 	public ResponseEntity<Post> findById(@PathVariable String id) {
 		Post obj = service.findById(id);
-		return ResponseEntity.ok().body(obj);	
+		return ResponseEntity.ok().body(obj);
 	}
 	
-	@RequestMapping(value ="/titlesearch", method = RequestMethod.GET)
-	public ResponseEntity<List<Post>> findByTitle(@RequestParam(value = "text", defaultValue="") String text){
+	@RequestMapping(value="/titlesearch", method=RequestMethod.GET)
+ 	public ResponseEntity<List<Post>> findByTitle(@RequestParam(value="text", defaultValue="") String text) {
 		text = URL.decodeParam(text);
 		List<Post> list = service.findByTitle(text);
-		return ResponseEntity.ok().body(list);	
+		return ResponseEntity.ok().body(list);
+	}
+
+	@RequestMapping(value="/fullsearch", method=RequestMethod.GET)
+ 	public ResponseEntity<List<Post>> fullSearch(
+ 			@RequestParam(value="text", defaultValue="") String text,
+ 			@RequestParam(value="minDate", defaultValue="") String minDate,
+ 			@RequestParam(value="maxDate", defaultValue="") String maxDate) {
+		text = URL.decodeParam(text);
+		Date min = URL.convertDate(minDate, new Date(0L));
+		Date max = URL.convertDate(maxDate, new Date());
+		List<Post> list = service.fullSearch(text, min, max);
+		return ResponseEntity.ok().body(list);
 	}
 	
 }
